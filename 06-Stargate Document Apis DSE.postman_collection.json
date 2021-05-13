@@ -1,0 +1,363 @@
+{
+	"info": {
+		"_postman_id": "db2ca72a-c023-4386-ade1-27530347c075",
+		"name": "06-Stargate Document Apis DSE",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Auth Token Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"postman.setEnvironmentVariable(\"auth-token\",jsonData.authToken);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"cassandra\",\n    \"password\": \"cassandra\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8081/v1/auth",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8081",
+					"path": [
+						"v1",
+						"auth"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Store a Employee Document",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{auth-token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"id\": 7401,\n  \"ename\": \"Edouard\",\n  \"job\": \"Trader\",\n  \"hiredate\": \"1980/12/17\",\n  \"sal\": 35000,\n  \"sex\": \"M\",\n  \"comm\": 0,\n  \"dept\": {\n    \"deptno\": 20,\n    \"dname\": \"RESEARCH\",\n    \"loc\": \"London\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8082/v2/namespaces/{{keyspace}}/collections/employee",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8082",
+					"path": [
+						"v2",
+						"namespaces",
+						"{{keyspace}}",
+						"collections",
+						"employee"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Employee by document Document Id",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{auth-token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8082/v2/namespaces/{{keyspace}}/collections/employee/aa87ebc9-df8d-438d-8816-214d8f9f62e6",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8082",
+					"path": [
+						"v2",
+						"namespaces",
+						"{{keyspace}}",
+						"collections",
+						"employee",
+						"aa87ebc9-df8d-438d-8816-214d8f9f62e6"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Store a Employee Document giving partitionkey",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"type": "text",
+						"value": "{{X-Cassandra-Token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"id\": 7402,\n  \"ename\": \"Dupont\",\n  \"job\": \"Trader\",\n  \"hiredate\": \"1980/12/17\",\n  \"sal\": 150000,\n  \"sex\": \"M\",\n  \"comm\": 0,\n  \"dept\": {\n    \"deptno\": 20,\n    \"dname\": \"RESEARCH\",\n    \"loc\": \"Paris\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{databaseId}}-{{region}}.apps.astra.datastax.com/api/rest/v2/namespaces/{{keyspaceName}}/collections/employee/7402",
+					"protocol": "https",
+					"host": [
+						"{{databaseId}}-{{region}}",
+						"apps",
+						"astra",
+						"datastax",
+						"com"
+					],
+					"path": [
+						"api",
+						"rest",
+						"v2",
+						"namespaces",
+						"{{keyspaceName}}",
+						"collections",
+						"employee",
+						"7402"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Employee by id in where clause",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{auth-token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8082/v2/namespaces/{{keyspaceName}}/collections/employee?&where={\"id\":{\"$eq\":7401}}",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8082",
+					"path": [
+						"v2",
+						"namespaces",
+						"{{keyspaceName}}",
+						"collections",
+						"employee"
+					],
+					"query": [
+						{
+							"key": "page-size",
+							"value": "2",
+							"disabled": true
+						},
+						{
+							"key": null,
+							"value": null
+						},
+						{
+							"key": "where",
+							"value": "{\"id\":{\"$eq\":7401}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Employee by Department Location (dept.loc json Path)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{auth-token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8082/v2/namespaces/{{keyspaceName}}/collections/employee?where={\"job\":{\"$eq\":\"Trader\"}}&page-size=10",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8082",
+					"path": [
+						"v2",
+						"namespaces",
+						"{{keyspaceName}}",
+						"collections",
+						"employee"
+					],
+					"query": [
+						{
+							"key": "where",
+							"value": "{\"job\":{\"$eq\":\"Trader\"}}"
+						},
+						{
+							"key": "page-size",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Employee by Department Location (dept.loc json Path) and Salary",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{auth-token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8082/v2/namespaces/{{keyspaceName}}/collections/employee?where={\"dept.loc\":{\"$eq\":\"Paris\"}}&page-size=10",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8082",
+					"path": [
+						"v2",
+						"namespaces",
+						"{{keyspaceName}}",
+						"collections",
+						"employee"
+					],
+					"query": [
+						{
+							"key": "where",
+							"value": "{\"dept.loc\":{\"$eq\":\"Paris\"}}"
+						},
+						{
+							"key": "page-size",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Store a Employee Document",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{X-Cassandra-Token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"id\": 7402,\n  \"ename\": \"Dupont\",\n  \"job\": \"Trader\",\n  \"hiredate\": \"1980/12/17\",\n  \"sal\": 150000,\n  \"sex\": \"M\",\n  \"childs\": 1,\n  \"comm\": 0,\n  \"dept\": {\n    \"deptno\": 20,\n    \"dname\": \"RESEARCH\",\n    \"loc\": \"Paris\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{databaseId}}-{{region}}.apps.astra.datastax.com/api/rest/v2/namespaces/{{keyspaceName}}/collections/employee/7402",
+					"protocol": "https",
+					"host": [
+						"{{databaseId}}-{{region}}",
+						"apps",
+						"astra",
+						"datastax",
+						"com"
+					],
+					"path": [
+						"api",
+						"rest",
+						"v2",
+						"namespaces",
+						"{{keyspaceName}}",
+						"collections",
+						"employee",
+						"7402"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Employee by Employee Name (ename)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-cassandra-token",
+						"value": "{{auth-token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8082/v2/namespaces/{{keyspaceName}}/collections/employee?where={\"ename\":{\"$eq\":\"Durand\"}}",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8082",
+					"path": [
+						"v2",
+						"namespaces",
+						"{{keyspaceName}}",
+						"collections",
+						"employee"
+					],
+					"query": [
+						{
+							"key": "where",
+							"value": "{\"ename\":{\"$eq\":\"Durand\"}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

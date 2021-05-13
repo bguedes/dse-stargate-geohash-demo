@@ -1,0 +1,236 @@
+{
+	"info": {
+		"_postman_id": "3bd7870d-1b66-4ccb-9c52-2d26dad0f676",
+		"name": "05-Stargate Movie Rest Apis DSE demo",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Auth Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"postman.setEnvironmentVariable(\"auth-token\",jsonData.authToken);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"cassandra\",\n    \"password\": \"cassandra\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8081/v1/auth",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8081",
+					"path": [
+						"v1",
+						"auth"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get User by User_Id",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "x-cassandra-token",
+						"value": "{{auth-token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8082/v2/keyspaces/stockwatcher/user/dfdf8009-d6b4-11e2-992a-238715b9803d",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8082",
+					"path": [
+						"v2",
+						"keyspaces",
+						"stockwatcher",
+						"user",
+						"dfdf8009-d6b4-11e2-992a-238715b9803d"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get User By email without SAI usage",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "x-cassandra-token",
+						"type": "text",
+						"value": "{{auth-token}}"
+					}
+				],
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8082/v2/keyspaces/stockwatcher/user?where={\"email_address\": {\"$eq\": \"user10@stockwatcher.org\"}}",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8082",
+					"path": [
+						"v2",
+						"keyspaces",
+						"stockwatcher",
+						"user"
+					],
+					"query": [
+						{
+							"key": "where",
+							"value": "{\"email_address\": {\"$eq\": \"user10@stockwatcher.org\"}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create SAI index for country",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "x-cassandra-token",
+						"value": "{{auth-token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"column\": \"email_address\",\n  \"name\": \"user_email_address_sai_idx\",\n  \"ifNotExists\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8082/v2/keyspaces/stockwatcher/tables/user/indexes",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8082",
+					"path": [
+						"v2",
+						"keyspaces",
+						"stockwatcher",
+						"tables",
+						"user",
+						"indexes"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get User By email with SAI usage",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "x-cassandra-token",
+						"value": "{{auth-token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{stargateIpAdress}}:8082/v2/keyspaces/stockwatcher/user?where={\"email_address\": {\"$eq\": \"user10@stockwatcher.org\"}}",
+					"protocol": "http",
+					"host": [
+						"{{stargateIpAdress}}"
+					],
+					"port": "8082",
+					"path": [
+						"v2",
+						"keyspaces",
+						"stockwatcher",
+						"user"
+					],
+					"query": [
+						{
+							"key": "where",
+							"value": "{\"email_address\": {\"$eq\": \"user10@stockwatcher.org\"}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "databaseid",
+			"value": "7d860edd-9e9b-4a4a-933d-8861b5195b31"
+		},
+		{
+			"key": "region",
+			"value": "europe-west1"
+		},
+		{
+			"key": "unique-UUID",
+			"value": "astra"
+		},
+		{
+			"key": "database-user",
+			"value": "datastax"
+		},
+		{
+			"key": "database-password",
+			"value": "datastax"
+		},
+		{
+			"key": "my_keyspace",
+			"value": "astrademo"
+		},
+		{
+			"key": "auth-token",
+			"value": ""
+		}
+	]
+}

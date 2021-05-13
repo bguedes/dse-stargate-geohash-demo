@@ -1,0 +1,650 @@
+
+
+<!-- -----------------------------------------------------------
+----------------------------------------------------------------
+
+
+   DataStax Astra; Geo-hash. GraphQL demonstration program.
+
+
+----------------------------------------------------------------
+---- ------------------------------------------------------- -->
+
+
+<!DOCTYPE html>
+<html>
+
+
+<!-- ------------------------------------------------------- -->
+<!-- ------------------------------------------------------- -->
+<!-- ------------------------------------------------------- -->
+<!-- ------------------------------------------------------- -->
+
+
+<head>
+	
+   <meta charset="utf-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+   <!--
+   This block required for jQuery, which gives us Ajax support.
+   -->
+   <script src="{{ url_for('static', filename='10_jquery.min.js'  ) }}">
+   </script>
+   <link rel="stylesheet" type="text/css"
+      href="{{ url_for('static', filename='11_bootstrap.min.css') }}">
+
+   <!--
+   This block required for the TABbed DIVs.
+   -->
+   <link rel="stylesheet" type="text/css"
+      href="{{ url_for('static', filename='20_TABbedMenu.css') }}">
+   <script src="{{ url_for('static', filename='21_TABbedMenu.js') }}">
+   </script>
+	
+   <!--
+   This block required for Leaflet, which give us our maps.
+   -->
+   <link rel="stylesheet" type="text/css"
+      href="{{ url_for('static', filename='24_leaflet.css') }}">
+   <script src="{{ url_for('static', filename='25_leaflet.js') }}">
+   </script>
+
+   <!--  
+   Used for the vertical sliders.
+   -->
+   <style>
+   input.vertical {
+      -webkit-appearance: slider-vertical;
+      writing-mode: bt-lr;
+      }
+   </style>
+
+</head>
+
+
+<!-- ------------------------------------------------------- -->
+<!-- ------------------------------------------------------- -->
+<!-- ------------------------------------------------------- -->
+<!-- ------------------------------------------------------- -->
+
+
+<body>
+
+   <br>
+   <h1>
+      <span style="color:#009900">
+      Apache Cassandra -- Geo-spatial, GraphQL demonstration
+      </span>
+   </h1>
+   <br>
+
+   <table border=0>
+      <tr>
+         <td style="width:600px">
+            <table border=0>
+
+               <td>
+                  <!-- --------------------------------------------------------
+                  Instructions; How to use this form.
+                  --------------------------------------------------------- -->
+                  <ul>
+                     <li>
+                     CLICK-AND-HOLD, then DRAG/RELEASE, to move the map.
+                     </li>
+                     <li>
+                     CLICK to set an Orange Pin in the map, which becomes the
+                     (query reference point: your location).
+                     </li>
+                     <br>
+                     <br>
+                     <li>
+                     (The single Orange Pin represents your location. The Blue
+                     Pins represent locations you have queried; balloon help
+                     pops-up on Hover over Blue Pins.)
+                     </li>
+                     <br>
+                     <li>
+                     Change the Compass and Speedometer as you see fit; low
+                     speeds equate to walking, and will query a bounding box,
+                     higher speeds equate to driving, and will query a (direction).
+                     </li>
+                  </ul>
+               </td>
+
+               <td>
+                  <!-- --------------------------------------------------------
+                  Visual control for direction
+                  --------------------------------------------------------- -->
+                  <img id="img_compass" src="{{ url_for('static', filename='./images/compass_0.png') }}"
+                     width="120" height="120">
+                  <br>
+                  <br>
+                  <label for="slider_compass">Direction</label>
+                  <input type="range" min="0" max="360" value="0" step="45" id="slider_compass"
+                     class="vertical" orient="vertical" oninput="f_updateCompass(value)"
+                     list="slider_compass_settings" onchange="f_onChange1()">
+                  <datalist id="slider_compass_settings">
+                     <option>0</option>
+                     <option>45</option>
+                     <option>90</option>
+                     <option>135</option>
+                     <option>180</option>
+                     <option>225</option>
+                     <option>270</option>
+                     <option>315</option>
+                     <option>360</option>
+                  </datalist>
+               
+                  <script>
+                     function f_updateCompass(heading) {
+                        if (heading == 0 || heading ==360) {
+                           document.querySelector('#img_compass').src =
+                              "{{ url_for('static', filename='./images/compass_0.png') }}";
+                        } else if (heading == 45) {
+                           document.querySelector('#img_compass').src = 
+                              "{{ url_for('static', filename='./images/compass_45.png') }}";
+                        } else if (heading == 90) {
+                           document.querySelector('#img_compass').src = 
+                              "{{ url_for('static', filename='./images/compass_90.png') }}";
+                        } else if (heading == 135) {
+                           document.querySelector('#img_compass').src = 
+                              "{{ url_for('static', filename='./images/compass_135.png') }}";
+                        } else if (heading == 180) {
+                           document.querySelector('#img_compass').src = 
+                              "{{ url_for('static', filename='./images/compass_180.png') }}";
+                        } else if (heading == 225) {
+                           document.querySelector('#img_compass').src = 
+                              "{{ url_for('static', filename='./images/compass_225.png') }}";
+                        } else if (heading == 270) {
+                           document.querySelector('#img_compass').src = 
+                              "{{ url_for('static', filename='./images/compass_270.png') }}";
+                        } else {
+                           document.querySelector('#img_compass').src = 
+                              "{{ url_for('static', filename='./images/compass_315.png') }}";
+                           }
+                        }
+                  </script>
+               </td>
+
+               <td>
+                  <!-- --------------------------------------------------------
+                  Visual control for speed
+                  --------------------------------------------------------- -->
+                  <br>
+                  <br>
+                  <img id="img_speed" src="{{ url_for('static', filename=
+                     './images/person.png') }}" width="100" height="100">
+                  <br>
+                  <br>
+                  <label for="slider_speed">Speed</label>
+                  <input type="range" min="0" max="80" value="0" id="slider_speed" 
+                     step="10" oninput="f_updateSpeed(value)" onchange="f_onChange1()"
+                     class="vertical" orient="vertical" list="slider_speed_settings">
+                  <output for="slider_speed" id="output_speed_gauge">Walking</output>
+                  <datalist id="slider_speed_settings">
+                     <option>0</option>
+                     <option>10</option>
+                     <option>20</option>
+                     <option>30</option>
+                     <option>40</option>
+                     <option>50</option>
+                     <option>60</option>
+                     <option>70</option>
+                     <option>80</option>
+                  </datalist>
+               
+                  <script>
+                     function f_updateSpeed(speed) {
+                        if (speed < 10) {
+                           document.querySelector('#output_speed_gauge').value = "Walking";
+                              //
+                           document.querySelector('#img_speed').src =
+                              "{{ url_for('static', filename='./images/person.png') }}";
+                        } else if (speed < 40) {
+                           document.querySelector('#output_speed_gauge').value = "Driving Slow - " + speed;
+                              //
+                           document.querySelector('#img_speed').src =
+                              "{{ url_for('static', filename='./images/jeep.png') }}";
+                        } else {
+                           document.querySelector('#output_speed_gauge').value = "Driving Fast - " + speed;
+                              //
+                           document.querySelector('#img_speed').src =
+                              "{{ url_for('static', filename='./images/jeep.png') }}";
+                           }
+                        }
+                  </script>
+               </td>
+
+            </table>
+         </td>
+         <td>
+            <!-- --------------------------------------------------------
+            div for the map proper
+            --------------------------------------------------------- -->
+            <div id="div_map" style="width: 720px; height: 480px;"></div>
+            </div>
+            <p style="color:gray">
+            Maps data by: OpenStreetMaps and Leaflet.js
+            &nbsp&nbsp&nbsp&nbsp
+            Location data: 2012 Yelp public data set.
+            <br>
+            France, Italy and Spain data, 1.4M rows. (1680x1050)
+            </p>
+           <br>
+            &nbsp&nbsp&nbsp&nbsp
+            <input onclick="f_clearDataPins();" type=button value="Clear Pins from Map">
+            &nbsp&nbsp&nbsp&nbsp
+            Query filter (text/name) for Locations: 
+            <input type="text" id="it_textFilter" size="32"
+               onchange="f_onChange2()">
+         </td>
+      </tr>
+   </table>
+
+
+   <!-- --------------------------------------------------------
+   Script that runs the map
+   --------------------------------------------------------- -->
+
+   <script>
+
+      var l_mymap = L.map('div_map').setView([43.7222, 7.1520], 10);
+      
+      //  l_pinsRefArr[] keeps the blue pins we return and render from 
+      //  queries; effecitvely, the (stores) you are looking for.
+      //
+      //  l_locaPin is our reference point/location; where we are standing
+      //  or where our car currently currently sits.
+      //
+      //  l_response is whatever answer we got from the server.
+      //
+      var l_pinsRefArr = [];
+      var l_locaPin    = null;
+      var l_response;
+
+         // ///////////////////////////////////////////
+
+      L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={access_token}', {
+         maxZoom: 18,
+         id: 'mapbox/streets-v11',
+         access_token: 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
+         tileSize: 512,
+         zoomOffset: -1
+         }).addTo(l_mymap);
+
+      var PinIcon = L.Icon.extend({
+         options: {
+            iconAnchor:   [0, 0],
+            iconSize:     [30, 50]
+            }
+         });
+            //
+      var bluePin  = new PinIcon({iconUrl: "{{ url_for('static', filename= './images/blue_pin.png') }}" }),
+         orangePin = new PinIcon({iconUrl: "{{ url_for('static', filename= './images/orange_pin.png') }}" });
+
+      //  Passing an array, obviously.
+      //
+      //  This invocation sets the 'current location' pin, as we start the program.
+      //
+      f_setLocaPin([40.585258, -105.084419]);
+
+         // ///////////////////////////////////////////
+
+      //  'e' is an event object, with properties for
+      //     e.latlng,       of type LatLng
+      //     e.latlng.lat    and
+      //     e.latlng.lng    of type float
+      //
+      //     marker() below will overload, but we always send an array for debugging
+      //
+      l_mymap.on('click', function(e){
+         f_setLocaPin([e.latlng.lat, e.latlng.lng]);
+         f_runQuery(e.latlng.lat, e.latlng.lng,
+            document.querySelector('#it_textFilter').value);
+         });
+      //  Sets our 'current location' pin
+      //
+      function f_setLocaPin(e) {
+         if (l_locaPin !== null) {
+            l_locaPin.remove();
+            }
+         var txt = ("<b>This is your current location.</b><br>" + 
+            "CLICK anywhere else to change your current location.");
+         l_locaPin =  L.marker(e, {icon: orangePin})
+            .bindPopup(txt)
+            .addTo(l_mymap);
+         }
+
+         // ///////////////////////////////////////////
+
+      //  Sets all other pins, effectively; our data pins for the businesses
+      //  we return from query
+      //
+      function f_setDataPin(e, txt) {
+         // var strx = e.latlng;
+         // var l_pin = L.marker([strx.lat, strx.lng], {icon: bluePin}).addTo(l_mymap);
+         var l_pin = L.marker(e, {icon: bluePin}).addTo(l_mymap);
+            //
+         var l_pin_popup;
+            //
+         l_pin.on('mouseover', function(e) { 
+            l_pin_popup = L.popup({ offset: L.point(0,0)});
+               l_pin_popup.setContent(txt);
+               l_pin_popup.setLatLng(e.target.getLatLng());
+               l_pin_popup.openOn(l_mymap);
+               });
+         l_pin.on('mouseout', function(e) { 
+            l_mymap.closePopup(l_pin_popup);
+            });
+               //
+         l_pinsRefArr.push(l_pin);
+         }
+
+      //  Erase all of the data pins from the map
+      //
+      function f_clearDataPins() {
+         for (var i = 0; i < l_pinsRefArr.length; i++) {
+            l_pinsRefArr[i].remove();
+            }
+         l_pinsRefArr  = [];
+         }
+
+         // ///////////////////////////////////////////
+
+      //  AJAX function, calls to server to get businesses close to our
+      //  current location
+      //
+      function f_runQuery(i_lat, i_lng, i_textFilter) {
+         $.getJSON(
+            "/_do_query",
+            {
+            h_lat        : i_lat        ,
+            h_lng        : i_lng        ,
+            h_textFilter : i_textFilter
+            },
+            function(r_response) {
+               // To just see what is returned,
+               ///
+               // var l_txt1 = JSON.stringify(r_response);
+               // alert(l_txt1);
+
+               l_response = r_response;
+                  //
+               f_onChange1();
+               }
+            );
+         };
+
+         // ///////////////////////////////////////////
+
+      //  Because we change what is displayed based on multiple events,
+      //  put this in a separate function.
+      //
+      function f_onChange1() {
+
+         f_clearDataPins();
+
+         l_currentSpeed   = document.querySelector('#slider_speed'  ).value 
+         l_currentCompass = document.querySelector('#slider_compass').value 
+            //
+         if (l_currentSpeed < 10) {
+            l_idx1 = "C0";
+         } else if (l_currentSpeed < 40) {
+            if (l_currentCompass == 0 || l_currentCompass == 360) {
+               l_idx1 = "N1";
+            } else if (l_currentCompass == 45 ) {
+               l_idx1 = "NE1";
+            } else if (l_currentCompass == 90 ) {
+               l_idx1 = "E1";
+            } else if (l_currentCompass == 135) {
+               l_idx1 = "SE1";
+            } else if (l_currentCompass == 180) {
+               l_idx1 = "S1";
+            } else if (l_currentCompass == 225) {
+               l_idx1 = "SW1";
+            } else if (l_currentCompass == 270) {
+               l_idx1 = "W1";
+            } else {
+               l_idx1 = "NW1";
+            }
+         } else {
+            if (l_currentCompass == 0 || l_currentCompass == 360) {
+               l_idx1 = "N2";
+            } else if (l_currentCompass == 45 ) {
+               l_idx1 = "NE2";
+            } else if (l_currentCompass == 90 ) {
+               l_idx1 = "E2";
+            } else if (l_currentCompass == 135) {
+               l_idx1 = "SE2";
+            } else if (l_currentCompass == 180) {
+               l_idx1 = "S2";
+            } else if (l_currentCompass == 225) {
+               l_idx1 = "SW2";
+            } else if (l_currentCompass == 270) {
+               l_idx1 = "W2";
+            } else {
+               l_idx1 = "NW2";
+            }
+         }
+
+         //  Format what we send to the HTML table builder differently
+         //
+         var l_sendToHtmlTable = []
+            
+         //  Parse thru our query results, build balloon help text
+         //
+         for (i = 0; i < l_response[l_idx1]["values"].length; i++) {
+            l_latLng = [ parseFloat(l_response[l_idx1]["values"][i]["md_lat"]),
+               parseFloat(l_response[l_idx1]["values"][i]["md_lng"]) ];
+                  //
+            l_name     = l_response[l_idx1]["values"][i]["md_name"       ];
+            l_subCat   = l_response[l_idx1]["values"][i]["md_subcategory"];
+            l_addr     = l_response[l_idx1]["values"][i]["md_address"    ];
+            l_city     = l_response[l_idx1]["values"][i]["md_city"       ];
+            l_province = l_response[l_idx1]["values"][i]["md_province"   ];
+            l_phone    = l_response[l_idx1]["values"][i]["md_phone"      ];
+               //
+            l_ballTxt  = "<b>" + l_name + "</b><br>" +
+               l_subCat + "<br>" + l_addr + ", " + l_city + ", " +
+               l_province + "<br><br>" + l_phone;
+                  //
+            f_setDataPin(l_latLng, l_ballTxt);
+                  //
+            l_sendToHtmlTable.push( {h_name: l_name, h_latLng: l_latLng, h_ballTxt: l_ballTxt} );
+            }
+         
+         //  Call to render HTML table
+         //
+         f_buildHtmlTable(l_sendToHtmlTable);
+
+         };
+
+         // ///////////////////////////////////////////
+
+         //  Called only from the text entry field (filter)
+         //
+         function f_onChange2() {
+
+            f_runQuery(l_locaPin.getLatLng().lat, l_locaPin.getLatLng().lng,
+               document.querySelector('#it_textFilter').value);
+
+         }
+
+         // ///////////////////////////////////////////
+
+   </script>
+
+
+   <!-- --------------------------------------------------------
+   Start the TABbed divs.
+   --------------------------------------------------------- -->
+
+   <br>
+   <br>
+
+   <ul class="tab">
+      <li><a href="javascript:void(0)" class="tablinks"
+         onclick="openDiv(event, 'div_1')"
+         id="li_tab1"     >Results Table             </a></li>
+      <li><a href="javascript:void(0)" class="tablinks"
+         onclick="openDiv(event, 'div_2' )"
+         id="li_tab2"    >Solr/Lucene Model          </a></li>
+      <li><a href="javascript:void(0)" class="tablinks"
+         onclick="openDiv(event, 'div_3' )"
+         id="li_tab3"    >GeoHash, Directional       </a></li>
+      <li><a href="javascript:void(0)" class="tablinks"
+         onclick="openDiv(event, 'div_4' )"
+         id="li_tab4"    >Model => Quadrants         </a></li>
+      <li><a href="javascript:void(0)" class="tablinks"
+         onclick="openDiv(event, 'div_5' )"
+         id="li_tab5"    >Model => Parallel Groupings</a></li>
+   </ul>
+
+
+   <!-- -- DIV 1 ----------------------------------------- -->
+
+
+   <div id="div_1" class="tabcontent">
+      <br>
+      <h4>
+         Results Table: After any query you run above, an HTML table
+         below will be populated with data from your query.
+      </h4>
+      <br>
+      <br>
+      <table id="t_queryData" class="tab_table" cellspacing="0"
+         width="80%" align="center">
+      </table>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+   </div>
+
+   <script>
+
+      function f_buildHtmlTable(i_tableData) {
+            //
+         document.getElementById("t_queryData").deleteTHead() ;
+         document.getElementById("t_queryData").innerHTML = "";
+            //
+         var l_tabl = document.getElementById("t_queryData");
+         var l_head = l_tabl.createTHead();
+         var l_hrow = l_head.insertRow(0);
+            //
+         var l_cell = l_hrow.insertCell(0);
+         l_cell.innerHTML = "<b>" + "Name"         + "</b>";
+         var l_cell = l_hrow.insertCell(1);
+         l_cell.innerHTML = "<b>" + "Location"     + "</b>";
+         var l_cell = l_hrow.insertCell(2);
+         l_cell.innerHTML = "<b>" + "Description"  + "</b>";
+            //
+         for (i = 0; i < i_tableData.length; i++) {
+               //
+            var l_brow = l_tabl.insertRow(i+1);
+            var l_data = i_tableData[i];
+               //
+            var l_cell = l_brow.insertCell(0);
+            var l_col1 = l_data["h_name"];
+            l_cell.innerHTML = l_col1;
+               //
+            var l_cell = l_brow.insertCell(1);
+            var l_col1 = l_data["h_latLng"];
+            l_cell.innerHTML = l_col1;
+               //
+            var l_cell = l_brow.insertCell(2);
+            var l_col2 = l_data["h_ballTxt"];
+            l_cell.innerHTML = l_col2;
+            }
+         };
+
+   </script>
+
+
+   <!-- -- DIV 2 ----------------------------------------- -->
+
+
+   <div id="div_2" class="tabcontent">
+      <br>
+      <br>
+      <img src="{{ url_for('static', filename='./images/geohash0.png') }}"
+         width="1093" height="498">
+      <br>
+      <br>
+      <br>
+      <br>
+   </div>
+
+
+   <!-- -- DIV 3 ----------------------------------------- -->
+
+
+   <div id="div_3" class="tabcontent">
+      <br>
+      <br>
+      <img src="{{ url_for('static', filename='./images/geohash3.png') }}"
+         width="1093" height="498">
+      <br>
+      <br>
+      <br>
+      <br>
+   </div>
+
+
+   <!-- -- DIV 4 ----------------------------------------- -->
+
+
+   <div id="div_4" class="tabcontent">
+      <br>
+      <br>
+      <img src="{{ url_for('static', filename='./images/geohash1.png') }}"
+         width="1093" height="498">
+      <br>
+      <br>
+      <br>
+      <br>
+   </div>
+
+
+   <!-- -- DIV 5 ----------------------------------------- -->
+
+
+   <div id="div_5" class="tabcontent">
+      <br>
+      <br>
+      <img src="{{ url_for('static', filename='./images/geohash2.png') }}"
+         width="1093" height="498">
+      <br>
+      <br>
+      <br>
+      <br>
+   </div>
+
+
+   <!-- -------------------------------------------------- -->
+
+
+   <!--
+   This code is for the TABbed divs; makes TAB 1 appear on page load.
+   -->
+   <script type="text/javascript">
+      document.getElementById("li_tab1" ).click();
+   </script>
+
+
+   <!-- -------------------------------------------------- -->
+
+
+</body>
+
+
+</html>
+
+
+
+
